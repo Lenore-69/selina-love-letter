@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Virtual Love Letter</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+        sans-serif;
+      background: radial-gradient(circle at top, #ffe5f0 0, #f7c6d9 40%, #f4b0cc 100%);
+    }
+
+    /* Song title + volume at top */
+    .song-info {
+      position: fixed;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(255, 255, 255, 0.9);
+      padding: 8px 16px 10px;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+      font-size: 0.9rem;
+      color: #923055;
+      backdrop-filter: blur(8px);
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      align-items: center;
+    }
+
+    .song-line {
+      white-space: nowrap;
+    }
+
+    .song-info span.label {
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      font-size: 0.7rem;
+      color: #c85483;
+      margin-right: 6px;
+    }
+
+    .song-info span.title {
+      font-weight: 600;
+    }
+
+    .volume-control {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.75rem;
+      color: #b0587a;
+    }
+
+    .volume-control input[type="range"] {
+      width: 110px;
+      accent-color: #f36f9a;
+    }
+
+    .envelope-wrapper {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+    }
+
+    .envelope {
+      position: relative;
+      width: 320px;
+      height: 220px;
+      perspective: 1000px;
+    }
+
+    .envelope-base {
+      position: absolute;
+      inset: 0;
+      background: #fefefe;
+      border-radius: 8px;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.18);
+      overflow: hidden;
+    }
+
+    /* The actual letter card inside */
+    .letter {
+      position: absolute;
+      inset: 18px;
+      background: #fff;
+      border-radius: 6px;
+      padding: 18px 20px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+      transform-origin: bottom center;
+      transform: translateY(55%) rotateX(-80deg);
+      transition: transform 0.9s cubic-bezier(0.19, 1, 0.22, 1),
+                  opacity 0.9s ease;
+      z-index: 1;
+      opacity: 0.98;
+    }
+
+    .envelope:hover .letter {
+      transform: translateY(0) rotateX(0deg);
+      opacity: 1;
+    }
+
+    .letter-header {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      color: #f08aaa;
+      margin-bottom: 6px;
+    }
+
+    .letter-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #c53163;
+      margin-bottom: 14px;
+    }
+
+    .letter-body {
+      font-size: 0.92rem;
+      line-height: 1.5;
+      color: #4a3040;
+      margin-bottom: 16px;
+    }
+
+    .letter-signature {
+      font-size: 0.86rem;
+      color: #b0587a;
+      text-align: right;
+    }
+
+    .letter-signature strong {
+      color: #e3346f;
+      font-weight: 600;
+    }
+
+    /* Envelope flaps (big pink triangles) */
+    .flap-top,
+    .flap-bottom {
+      position: absolute;
+      left: 0;
+      right: 0;
+      height: 60%;
+      background: linear-gradient(145deg, #f36f9a, #f08aaa);
+      z-index: 3;
+      backface-visibility: hidden;
+    }
+
+    /* Top flap: triangle pointing down */
+    .flap-top {
+      top: 0;
+      clip-path: polygon(0 0, 100% 0, 50% 70%);
+      transform-origin: top center;
+      transform: rotateX(0deg);
+      transition: transform 0.9s cubic-bezier(0.19, 1, 0.22, 1);
+    }
+
+    .envelope:hover .flap-top {
+      transform: rotateX(-180deg);
+    }
+
+    /* Bottom flap: triangle pointing up */
+    .flap-bottom {
+      bottom: 0;
+      clip-path: polygon(0 100%, 50% 30%, 100% 100%);
+      transform-origin: bottom center;
+      transform: rotateX(0deg);
+      transition: transform 0.9s cubic-bezier(0.19, 1, 0.22, 1);
+    }
+
+    .envelope:hover .flap-bottom {
+      transform: rotateX(180deg);
+    }
+
+    /* Static back triangles (light) */
+    .back-left,
+    .back-right {
+      position: absolute;
+      bottom: 0;
+      width: 50%;
+      height: 70%;
+      background: #fde1ea;
+      z-index: 0;
+    }
+
+    .back-left {
+      left: 0;
+      clip-path: polygon(0 100%, 100% 0, 100% 100%);
+    }
+
+    .back-right {
+      right: 0;
+      clip-path: polygon(0 0, 100% 100%, 0 100%);
+    }
+
+    /* Heart seal OUTSIDE the card */
+    .seal {
+      position: absolute;
+      top: 52%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 38px;
+      height: 34px;
+      background: #ff3366;
+      transform-origin: center;
+      clip-path: polygon(
+        50% 90%,
+        4% 40%,
+        10% 15%,
+        30% 10%,
+        50% 25%,
+        70% 10%,
+        90% 15%,
+        96% 40%
+      );
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+      animation: pulse 1.4s infinite;
+      z-index: 4;
+      transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+
+    /* On open, the heart disappears */
+    .envelope:hover .seal {
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(0.4);
+      box-shadow: none;
+      animation: none;
+    }
+
+    @keyframes pulse {
+      0%, 100% {
+        transform: translate(-50%, -50%) scale(1);
+        box-shadow: 0 0 0 0 rgba(255, 51, 102, 0.4);
+      }
+      50% {
+        transform: translate(-50%, -50%) scale(1.08);
+        box-shadow: 0 0 0 10px rgba(255, 51, 102, 0);
+      }
+    }
+
+    /* Small floating hearts background */
+    .floating-heart {
+      position: fixed;
+      width: 10px;
+      height: 10px;
+      background: #ff5e8c;
+      opacity: 0.8;
+      border-radius: 50%;
+      transform: rotate(45deg);
+      box-shadow:
+        0 -6px 0 0 #ff5e8c,
+        -6px 0 0 0 #ff5e8c;
+      animation: floatUp 8s linear infinite;
+      pointer-events: none;
+    }
+
+    .floating-heart:nth-child(1) { left: 10%; animation-duration: 7s; animation-delay: 0s; }
+    .floating-heart:nth-child(2) { left: 25%; animation-duration: 9s; animation-delay: 1s; }
+    .floating-heart:nth-child(3) { left: 40%; animation-duration: 8s; animation-delay: 2.5s; }
+    .floating-heart:nth-child(4) { left: 60%; animation-duration: 10s; animation-delay: 0.8s; }
+    .floating-heart:nth-child(5) { left: 80%; animation-duration: 7.5s; animation-delay: 1.8s; }
+
+    @keyframes floatUp {
+      0% {
+        bottom: -5%;
+        opacity: 0;
+        transform: translateX(0) rotate(45deg) scale(0.6);
+      }
+      25% {
+        opacity: 0.9;
+      }
+      50% {
+        transform: translateX(-8px) rotate(45deg) scale(0.9);
+      }
+      100% {
+        bottom: 105%;
+        opacity: 0;
+        transform: translateX(8px) rotate(45deg) scale(0.5);
+      }
+    }
+
+    /* Responsive tweak */
+    @media (max-width: 420px) {
+      .envelope {
+        width: 270px;
+        height: 200px;
+      }
+      .letter-body {
+        font-size: 0.86rem;
+      }
+      .song-info {
+        font-size: 0.8rem;
+        padding: 6px 10px 8px;
+      }
+      .volume-control input[type="range"] {
+        width: 90px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Song title + volume display -->
+  <div class="song-info">
+    <div class="song-line">
+      <span class="label">Now Playing:</span>
+      <span class="title">Deja Vu – Post Malone ft. Justin Bieber</span>
+    </div>
+    <div class="volume-control">
+      <span>Volume</span>
+      <!-- default volume set to 0.1 -->
+      <input id="volume-slider" type="range" min="0" max="1" step="0.01" value="0.1">
+    </div>
+  </div>
+
+  <!-- Background floating hearts -->
+  <div class="floating-heart"></div>
+  <div class="floating-heart"></div>
+  <div class="floating-heart"></div>
+  <div class="floating-heart"></div>
+  <div class="floating-heart"></div>
+
+  <!-- Envelope container -->
+  <div class="envelope-wrapper">
+    <div class="envelope">
+      <div class="envelope-base">
+        <!-- subtle envelope back -->
+        <div class="back-left"></div>
+        <div class="back-right"></div>
+
+        <!-- big pink flaps of the envelope -->
+        <div class="flap-top"></div>
+        <div class="flap-bottom"></div>
+
+        <!-- heart seal OUTSIDE the card that disappears on open -->
+        <div class="seal"></div>
+
+        <!-- the simple white letter revealed when flaps open -->
+        <div class="letter">
+          <div class="letter-header">Love Letter</div>
+          <div class="letter-title">For you, my greatest girlfriend</div>
+          <div class="letter-body">
+            If you were a Barbie to my Ken, I'd never let you go.
+            You always make me feel like I'm Kenough and I hope I make
+            you feel the same.
+            <br><br>
+          </div>
+          <div class="letter-signature">
+            With all my warmth,<br />
+            <strong>Your secret admirer</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Audio: plays the entire time, loops -->
+  <!-- Replace "your-song.mp3" with your own file path -->
+  <audio id="bg-music" src="Deja Vu.mp3" autoplay loop></audio>
+
+  <script>
+    const audio = document.getElementById('bg-music');
+    const volumeSlider = document.getElementById('volume-slider');
+
+    // Set initial volume to 0.1 (10%)
+    audio.volume = 0.1;
+
+    // Keep slider and audio in sync
+    volumeSlider.addEventListener('input', () => {
+      audio.volume = parseFloat(volumeSlider.value);
+    });
+
+    // Some browsers block autoplay with sound.
+    function tryPlay() {
+      audio.play().catch(() => {
+        const resumeOnClick = () => {
+          audio.play().finally(() => {
+            document.removeEventListener('click', resumeOnClick);
+          });
+        };
+        document.addEventListener('click', resumeOnClick);
+      });
+    }
+
+    window.addEventListener('load', tryPlay);
+  </script>
+</body>
+</html>
